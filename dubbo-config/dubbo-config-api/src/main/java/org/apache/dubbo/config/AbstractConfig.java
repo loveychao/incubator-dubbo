@@ -186,19 +186,26 @@ public abstract class AbstractConfig implements Serializable {
                         && !"getClass".equals(name)
                         && Modifier.isPublic(method.getModifiers())
                         && method.getParameterTypes().length == 0
-                        && isPrimitive(method.getReturnType())) {
+                        && isPrimitive(method.getReturnType())) {   //参数返回类型为基本或Object类型（只允许基本类型）
                     Parameter parameter = method.getAnnotation(Parameter.class);
+
+                    //如果方法返回值是Object类型（只允许基本类型），或者属性被排除，则跳过
                     if (method.getReturnType() == Object.class || parameter != null && parameter.excluded()) {
                         continue;
                     }
-                    int i = name.startsWith("get") ? 3 : 2;
+                    int i = name.startsWith("get") ? 3 : 2; //get和is取不同索引
+
+                    //获取属性名   转换驼峰命名为.分隔
                     String prop = StringUtils.camelToSplitName(name.substring(i, i + 1).toLowerCase() + name.substring(i + 1), ".");
+
+                    //获取参数key
                     String key;
                     if (parameter != null && parameter.key().length() > 0) {
                         key = parameter.key();
                     } else {
                         key = prop;
                     }
+                    //获取参数值
                     Object value = method.invoke(config);
                     String str = String.valueOf(value).trim();
                     if (value != null && str.length() > 0) {
