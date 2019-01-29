@@ -16,8 +16,9 @@
  */
 package org.apache.dubbo.common.concurrent;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -31,14 +32,14 @@ import static org.mockito.Mockito.verify;
 public class ExecutionListTest {
     private ExecutionList executionList;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         this.executionList = new ExecutionList();
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testAddNullRunnable() {
-        this.executionList.add(null, mock(Executor.class));
+        Assertions.assertThrows(NullPointerException.class, () -> this.executionList.add(null, mock(Executor.class)));
     }
 
     @Test
@@ -54,12 +55,7 @@ public class ExecutionListTest {
     @Test
     public void testExecuteRunnableWithDefaultExecutor() throws InterruptedException {
         final CountDownLatch countDownLatch = new CountDownLatch(1);
-        this.executionList.add(new Runnable() {
-            @Override
-            public void run() {
-                countDownLatch.countDown();
-            }
-        }, null);
+        this.executionList.add(countDownLatch::countDown, null);
 
         this.executionList.execute();
         countDownLatch.await();

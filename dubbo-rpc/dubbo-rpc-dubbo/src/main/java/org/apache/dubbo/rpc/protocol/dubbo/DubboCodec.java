@@ -114,7 +114,7 @@ public class DubboCodec extends ExchangeCodec implements Codec2 {
             req.setVersion(Version.getProtocolVersion());
             req.setTwoWay((flag & FLAG_TWOWAY) != 0);
             if ((flag & FLAG_EVENT) != 0) {
-                req.setEvent(Request.HEARTBEAT_EVENT);
+                req.setEvent(true);
             }
             try {
                 Object data;
@@ -145,6 +145,7 @@ public class DubboCodec extends ExchangeCodec implements Codec2 {
                 req.setBroken(true);
                 req.setData(t);
             }
+
             return req;
         }
     }
@@ -191,7 +192,7 @@ public class DubboCodec extends ExchangeCodec implements Codec2 {
     protected void encodeResponseData(Channel channel, ObjectOutput out, Object data, String version) throws IOException {
         Result result = (Result) data;
         // currently, the version value in Response records the version of Request
-        boolean attach = Version.isSupportResponseAttatchment(version);
+        boolean attach = Version.isSupportResponseAttachment(version);
         Throwable th = result.getException();
         if (th == null) {
             Object ret = result.getValue();
