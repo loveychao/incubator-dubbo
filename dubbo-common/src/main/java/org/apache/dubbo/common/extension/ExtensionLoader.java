@@ -465,14 +465,18 @@ public class ExtensionLoader<T> {
 
     @SuppressWarnings("unchecked")
     public T getAdaptiveExtension() {
+        //从缓存中获取
         Object instance = cachedAdaptiveInstance.get();
         if (instance == null) {
+            //双检🔐检查instance为空
             if (createAdaptiveInstanceError == null) {
                 synchronized (cachedAdaptiveInstance) {
                     instance = cachedAdaptiveInstance.get();
                     if (instance == null) {
                         try {
+                            // 创建自适应拓展
                             instance = createAdaptiveExtension();
+                            // 放入缓存
                             cachedAdaptiveInstance.set(instance);
                         } catch (Throwable t) {
                             createAdaptiveInstanceError = t;
@@ -793,6 +797,7 @@ public class ExtensionLoader<T> {
     @SuppressWarnings("unchecked")
     private T createAdaptiveExtension() {
         try {
+            // 获取自适应拓展类，并通过反射实例化
             return injectExtension((T) getAdaptiveExtensionClass().newInstance());
         } catch (Exception e) {
             throw new IllegalStateException("Can't create adaptive extension " + type + ", cause: " + e.getMessage(), e);
@@ -800,21 +805,28 @@ public class ExtensionLoader<T> {
     }
 
     private Class<?> getAdaptiveExtensionClass() {
+        // 通过 SPI 获取所有的拓展类
         getExtensionClasses();
+        //从缓存中获取
         if (cachedAdaptiveClass != null) {
             return cachedAdaptiveClass;
         }
+        //创建自适应扩展类并放入缓存
         return cachedAdaptiveClass = createAdaptiveExtensionClass();
     }
 
     private Class<?> createAdaptiveExtensionClass() {
+        // 构建自适应拓展代码
         String code = createAdaptiveExtensionClassCode();
         ClassLoader classLoader = findClassLoader();
+        // 获取编译器实现类
         org.apache.dubbo.common.compiler.Compiler compiler = ExtensionLoader.getExtensionLoader(org.apache.dubbo.common.compiler.Compiler.class).getAdaptiveExtension();
+        // 编译代码，生成 Class
         return compiler.compile(code, classLoader);
     }
 
     private String createAdaptiveExtensionClassCode() {
+
         StringBuilder codeBuilder = new StringBuilder();
         Method[] methods = type.getMethods();
         boolean hasAdaptiveAnnotation = false;
@@ -825,6 +837,7 @@ public class ExtensionLoader<T> {
             }
         }
         // no need to generate adaptive class since there's no adaptive method found.
+        //自适应扩展类至少有一个被Adaptive修饰的方法，否则抛出异常
         if (!hasAdaptiveAnnotation) {
             throw new IllegalStateException("No adaptive method exist on extension " + type.getName() + ", refuse to create the adaptive class!");
         }
@@ -844,8 +857,11 @@ public class ExtensionLoader<T> {
                 code.append("throw new UnsupportedOperationException(\"The method ")
                         .append(method.toString()).append(" of interface ")
                         .append(type.getName()).append(" is not adaptive method!\");");
-            } else {
+            }
+            else {
                 int urlTypeIndex = -1;
+
+                //如果存在URL参数则获取URL参数的位置
                 for (int i = 0; i < pts.length; ++i) {
                     if (pts[i].equals(URL.class)) {
                         urlTypeIndex = i;
@@ -853,12 +869,14 @@ public class ExtensionLoader<T> {
                     }
                 }
                 // found parameter in URL type
+
                 if (urlTypeIndex != -1) {
                     // Null Point check
+                    //URL参数非空检查
                     String s = String.format("\nif (arg%d == null) throw new IllegalArgumentException(\"url == null\");",
                             urlTypeIndex);
                     code.append(s);
-
+                    //将URL参数赋值给局部变量url
                     s = String.format("\n%s url = arg%d;", URL.class.getName(), urlTypeIndex);
                     code.append(s);
                 }
@@ -877,12 +895,15 @@ public class ExtensionLoader<T> {
                                     && !Modifier.isStatic(m.getModifiers())
                                     && m.getParameterTypes().length == 0
                                     && m.getReturnType() == URL.class) {
+                                //url参数位置
                                 urlTypeIndex = i;
+                                //url获取参数名称
                                 attribMethod = name;
                                 break LBL_PTS;
                             }
                         }
                     }
+                    //如果没url参数则抛出异常
                     if (attribMethod == null) {
                         throw new IllegalStateException("Failed to create adaptive class for interface " + type.getName()
                                 + ": not found url parameter or url attribute in parameters of method " + method.getName());
@@ -900,6 +921,9 @@ public class ExtensionLoader<T> {
                     code.append(s);
                 }
 
+                //至此url参数已经获取到且不为空
+
+                //如果value为空，怎把类名称转化为逗号分隔的方式作为value
                 String[] value = adaptiveAnnotation.value();
                 // value is not set, use the value generated from class name as the key
                 if (value.length == 0) {
@@ -907,6 +931,7 @@ public class ExtensionLoader<T> {
                     value = new String[]{splitName};
                 }
 
+                //检查Invocation参数
                 boolean hasInvocation = false;
                 for (int i = 0; i < pts.length; ++i) {
                     if (("org.apache.dubbo.rpc.Invocation").equals(pts[i].getName())) {
@@ -920,9 +945,11 @@ public class ExtensionLoader<T> {
                     }
                 }
 
+                //获取扩展名逻辑
                 String defaultExtName = cachedDefaultName;
                 String getNameCode = null;
                 for (int i = value.length - 1; i >= 0; --i) {
+                    //如果
                     if (i == value.length - 1) {
                         if (null != defaultExtName) {
                             if (!"protocol".equals(value[i])) {
