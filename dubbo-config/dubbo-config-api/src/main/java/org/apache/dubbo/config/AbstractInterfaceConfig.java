@@ -29,7 +29,6 @@ import org.apache.dubbo.common.utils.ReflectUtils;
 import org.apache.dubbo.common.utils.StringUtils;
 import org.apache.dubbo.common.utils.UrlUtils;
 import org.apache.dubbo.config.context.ConfigManager;
-import org.apache.dubbo.common.utils.CollectionUtils;
 import org.apache.dubbo.config.support.Parameter;
 import org.apache.dubbo.configcenter.DynamicConfiguration;
 import org.apache.dubbo.configcenter.DynamicConfigurationFactory;
@@ -334,9 +333,6 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         String hostToRegistry = ConfigUtils.getSystemProperty(Constants.DUBBO_IP_TO_REGISTRY);
         if (StringUtils.isEmpty(hostToRegistry)) {
             hostToRegistry = NetUtils.getLocalHost();
-        } else if (NetUtils.isInvalidLocalHost(hostToRegistry)) {
-            throw new IllegalArgumentException("Specified invalid registry ip from property:" +
-                    Constants.DUBBO_IP_TO_REGISTRY + ", value:" + hostToRegistry);
         }
         map.put(Constants.REGISTER_IP_KEY, hostToRegistry);
         appendParameters(map, monitor);
@@ -351,12 +347,12 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
                 if (getExtensionLoader(MonitorFactory.class).hasExtension("logstat")) {
                     map.put(Constants.PROTOCOL_KEY, "logstat");
                 } else {
-                    map.put(Constants.PROTOCOL_KEY, Constants.DOBBO_PROTOCOL);
+                    map.put(Constants.PROTOCOL_KEY, Constants.DUBBO_PROTOCOL);
                 }
             }
             return UrlUtils.parseURL(address, map);
         } else if (Constants.REGISTRY_PROTOCOL.equals(monitor.getProtocol()) && registryURL != null) {
-          return registryURL.setProtocol(Constants.DOBBO_PROTOCOL).addParameter(Constants.PROTOCOL_KEY, Constants.REGISTRY_PROTOCOL).addParameterAndEncoded(Constants.REFER_KEY, StringUtils.toQueryString(map));
+          return registryURL.setProtocol(Constants.DUBBO_PROTOCOL).addParameter(Constants.PROTOCOL_KEY, Constants.REGISTRY_PROTOCOL).addParameterAndEncoded(Constants.REFER_KEY, StringUtils.toQueryString(map));
         }
         return null;
     }
@@ -602,7 +598,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         if (local == null) {
             setLocal((String) null);
         } else {
-            setLocal(String.valueOf(local));
+            setLocal(local.toString());
         }
     }
 
@@ -624,7 +620,7 @@ public abstract class AbstractInterfaceConfig extends AbstractMethodConfig {
         if (stub == null) {
             setStub((String) null);
         } else {
-            setStub(String.valueOf(stub));
+            setStub(stub.toString());
         }
     }
 
